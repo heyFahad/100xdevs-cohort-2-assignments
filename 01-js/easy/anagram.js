@@ -6,7 +6,7 @@
 
 /**
  * A utility function to remove all the spaces from the given string
- * @param {strin} str The string to clean
+ * @param {string} str The string to clean
  * @returns {string} The cleaned string
  */
 function cleanStr(str) {

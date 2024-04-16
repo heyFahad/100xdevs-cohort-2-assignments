@@ -5,8 +5,21 @@
   Once you've implemented the logic, test your code by running
 */
 
+/**
+ * The function to count the number of vowels in the given string
+ * @param {string} str The input string
+ * @returns {number} The number of vowels present in the string
+ */
 function countVowels(str) {
     // Your code here
+    let totalVowelsCount = 0;
+    const vowelsMatch = str.match(/[aeiou]/gi);
+
+    if (vowelsMatch !== null) {
+        totalVowelsCount = vowelsMatch.length;
+    }
+
+    return totalVowelsCount;
 }
 
 module.exports = countVowels;
