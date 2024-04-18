@@ -24,7 +24,7 @@ class Todo {
      * @param {number} indexOfTodo
      */
     remove(indexOfTodo) {
-        this.todos.splice(indexOfTodo, 1)[0];
+        this.todos.splice(indexOfTodo, 1);
     }
 
     /**
@@ -46,11 +46,7 @@ class Todo {
      * @param {number} indexOfTodo
      */
     get(indexOfTodo) {
-        if (indexOfTodo >= 0 && indexOfTodo < this.todos.length) {
-            return this.todos[indexOfTodo];
-        }
-
-        return null;
+        return this.todos[indexOfTodo] ?? null;
     }
 
     clear() {
