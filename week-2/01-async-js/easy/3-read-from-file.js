@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs';
+import { resolve } from 'node:path';
 import { readFile as readFilePromise } from 'node:fs/promises';
 
 /**
@@ -6,12 +7,8 @@ import { readFile as readFilePromise } from 'node:fs/promises';
  * @param {string} filePath
  */
 async function readAndPrintFileAsynchronously(filePath) {
-    // create an AbortController instance to attach to this read operation
-    const controller = new AbortController();
-    const { signal } = controller;
-
     try {
-        const fileContents = await readFilePromise(filePath, { signal, encoding: 'utf-8' });
+        const fileContents = await readFilePromise(filePath, { encoding: 'utf-8' });
         console.log(fileContents);
     } catch (error) {
         console.error({ error });
@@ -38,7 +35,11 @@ function readFileUsingCallback(filePath, callback) {
  */
 function readFileCallback(err, data) {
     if (err) {
-        console.error({ err });
+        if (err.name === 'AbortError') {
+            console.log(`Reading the "3-read-from-file.md" file was cancelled by user`);
+        } else {
+            console.error({ err });
+        }
         return;
     }
 
@@ -48,8 +49,8 @@ function readFileCallback(err, data) {
 /**
  * ACTUAL TESTING OF THE ASSIGNMENT
  */
-readFileUsingCallback('./3-read-from-file.md', readFileCallback);
-readAndPrintFileAsynchronously('./4-write-to-file.md');
+const abortController = readFileUsingCallback(resolve('./3-read-from-file.md'), readFileCallback);
+readAndPrintFileAsynchronously(resolve('./4-write-to-file.md'));
 
 // perform an expensive operation to block the main thread and see how it affects the output
 let sum = 0;
@@ -57,3 +58,6 @@ for (let i = 0; i < 10_000_000_000; i += 1) {
     sum += 1;
 }
 console.log({ sum });
+
+// To spice things up, let's cancel the first file read operation to show how can we stop calling the callback function passed to the readFile function
+abortController.abort(); // after this line, only the contents of 2nd readFile operation will be printed in console
