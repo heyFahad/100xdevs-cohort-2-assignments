@@ -5,6 +5,12 @@
  */
 
 function sleep(milliseconds) {
+    const startTime = Date.now();
+
+    // execute a while loop for as long as the number of milliseconds do not get passed
+    while (Date.now() - startTime < milliseconds) {}
+
+    return Promise.resolve();
 }
 
 module.exports = sleep;
