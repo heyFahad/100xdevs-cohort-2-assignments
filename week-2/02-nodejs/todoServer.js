@@ -39,11 +39,109 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-  const express = require('express');
-  const bodyParser = require('body-parser');
-  
-  const app = express();
-  
-  app.use(bodyParser.json());
-  
-  module.exports = app;
+const express = require('express');
+const bodyParser = require('body-parser');
+const { v4: uuidV4 } = require('uuid');
+
+const SERVER_PORT = 8000;
+const TODOS = [];
+
+const app = express();
+
+app.use(bodyParser.json());
+
+// GET /todos - Retrieve all todo items
+app.get('/todos', (_, res) => {
+    res.status(200).json(TODOS);
+});
+
+// GET /todos/:id - Retrieve a specific todo item by ID
+app.get('/todos/:id', (req, res) => {
+    const { id } = req.params;
+
+    const todoItem = TODOS.find((todo) => todo.id === id);
+    if (todoItem) {
+        res.status(200).json(todoItem);
+    } else {
+        res.status(404).send('The requested todo item does not exist');
+    }
+});
+
+// POST /todos - Create a new todo item
+app.post('/todos', (req, res) => {
+    const { body } = req;
+
+    if (!body.title || !body.description) {
+        return res.status(411).send('Both the title and description are required to save a new Todo');
+    }
+
+    // create the new todo item object
+    const { title, description, ...rest } = body;
+    const todoItem = {
+        id: uuidV4(),
+        title,
+        description,
+        // spread the rest of the properties/data for the given todo
+        ...rest,
+    };
+
+    // save the new todo item into the list of todos
+    TODOS.push(todoItem);
+
+    // return a "201 Created" response to the client
+    res.status(201).json(todoItem);
+});
+
+// PUT /todos/:id - Update an existing todo item by ID
+app.put('/todos/:id', (req, res) => {
+    const { id } = req.params;
+    const { body: updatedTodoData } = req;
+
+    // check if the requested todo item exists in our records
+    const todoItemIndex = TODOS.findIndex((todo) => todo.id === id);
+    if (todoItemIndex === -1) {
+        return res.status(404).send('No todo item was found to update!');
+    }
+
+    // create the complete updated todo item object (if, in case, the incoming todo item has only the updated keys in it)
+    const updatedTodoItem = {
+        ...TODOS[todoItemIndex],
+        ...updatedTodoData,
+    };
+
+    // update the todo item in our list of all the TODOS
+    TODOS.splice(todoItemIndex, 1, updatedTodoItem);
+
+    // finally, return the response to the user
+    return res.status(200).send('Todo item was updated successfully');
+});
+
+// DELETE /todos/:id - Delete a todo item by ID
+app.delete('/todos/:id', (req, res) => {
+    const { id } = req.params;
+
+    // check if the requested todo item exists in our records
+    const todoItemIndex = TODOS.findIndex((todo) => todo.id === id);
+    if (todoItemIndex === -1) {
+        return res.status(404).send('No todo item was found to delete!');
+    }
+
+    // todo item exists. delete it from the TODOS array
+    TODOS.splice(todoItemIndex, 1);
+
+    // finally, return the success response
+    res.status(200).send('Todo item deleted successfully');
+});
+
+// any other route not defined
+app.all('*', (_, res) => {
+    res.status(404).json({
+        message: 'Can not find the requested API endpoint',
+    });
+});
+
+app.listen(SERVER_PORT, () => {
+    console.log(`Server started listening on port ${SERVER_PORT}`);
+});
+
+module.exports = app;
