@@ -54,7 +54,13 @@ const todosFilePath = resolve('todos.json');
  */
 const getTodosFromFile = async () => {
     const todos = await readFile(todosFilePath, { encoding: 'utf-8' });
-    return JSON.parse(todos);
+
+    try {
+        // this try-catch block makes sure that this parsing doesn't throw an error if the todos.json file is empty
+        return JSON.parse(todos);
+    } catch {
+        return [];
+    }
 };
 
 /**
