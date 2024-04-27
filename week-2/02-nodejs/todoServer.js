@@ -39,27 +39,55 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
+const { readFile, writeFile } = require('node:fs/promises');
+const { resolve } = require('node:path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { v4: uuidV4 } = require('uuid');
 
 const SERVER_PORT = 8000;
-const TODOS = [];
+const todosFilePath = resolve('todos.json');
+
+/**
+ * A helper function to get all the stored todos from the todos.json file
+ * @returns {Promise<Array<{ id: string; title: string; description: string; }>}
+ */
+const getTodosFromFile = async () => {
+    const todos = await readFile(todosFilePath, { encoding: 'utf-8' });
+    return JSON.parse(todos);
+};
+
+/**
+ * A helper function to save a list of todos in the todos.json file
+ * @param {Array<{ id: string; title: string; description: string; }>} data The list of `todos` to save in the todos.json file
+ */
+const saveTodosToFile = async (data) => {
+    writeFile(todosFilePath, JSON.stringify(data, null, 4), { encoding: 'utf-8' });
+};
 
 const app = express();
 
 app.use(bodyParser.json());
 
 // GET /todos - Retrieve all todo items
-app.get('/todos', (_, res) => {
-    res.status(200).json(TODOS);
+app.get('/todos', async (_, res) => {
+    // get saved todos from the todos.json file
+    const todos = await getTodosFromFile();
+
+    // return the list of todos to the client
+    res.status(200).json(todos);
 });
 
 // GET /todos/:id - Retrieve a specific todo item by ID
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', async (req, res) => {
     const { id } = req.params;
 
-    const todoItem = TODOS.find((todo) => todo.id === id);
+    // get saved todos from the todos.json file
+    const todos = await getTodosFromFile();
+
+    // get the requested todo item from the list of saved todos
+    const todoItem = todos.find((todo) => todo.id === id);
+
     if (todoItem) {
         res.status(200).json(todoItem);
     } else {
@@ -68,7 +96,7 @@ app.get('/todos/:id', (req, res) => {
 });
 
 // POST /todos - Create a new todo item
-app.post('/todos', (req, res) => {
+app.post('/todos', async (req, res) => {
     const { body } = req;
 
     if (!body.title || !body.description) {
@@ -85,49 +113,67 @@ app.post('/todos', (req, res) => {
         ...rest,
     };
 
-    // save the new todo item into the list of todos
-    TODOS.push(todoItem);
+    // get saved todos from the todos.json file
+    const todos = await getTodosFromFile();
+
+    // update the list of todos with the new todo item
+    todos.push(todoItem);
+
+    // save the updated todos list in the todos.json file
+    await saveTodosToFile(todos);
 
     // return a "201 Created" response to the client
     res.status(201).json(todoItem);
 });
 
 // PUT /todos/:id - Update an existing todo item by ID
-app.put('/todos/:id', (req, res) => {
+app.put('/todos/:id', async (req, res) => {
     const { id } = req.params;
     const { body: updatedTodoData } = req;
 
+    // get saved todos from the todos.json file
+    const todos = await getTodosFromFile();
+
     // check if the requested todo item exists in our records
-    const todoItemIndex = TODOS.findIndex((todo) => todo.id === id);
+    const todoItemIndex = todos.findIndex((todo) => todo.id === id);
     if (todoItemIndex === -1) {
         return res.status(404).send('No todo item was found to update!');
     }
 
     // create the complete updated todo item object (if, in case, the incoming todo item has only the updated keys in it)
     const updatedTodoItem = {
-        ...TODOS[todoItemIndex],
+        ...todos[todoItemIndex],
         ...updatedTodoData,
     };
 
-    // update the todo item in our list of all the TODOS
-    TODOS.splice(todoItemIndex, 1, updatedTodoItem);
+    // update the todo item in our list of all the todos
+    todos.splice(todoItemIndex, 1, updatedTodoItem);
+
+    // save the updated list of todos in the todos.json file
+    await saveTodosToFile(todos);
 
     // finally, return the response to the user
     return res.status(200).send('Todo item was updated successfully');
 });
 
 // DELETE /todos/:id - Delete a todo item by ID
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', async (req, res) => {
     const { id } = req.params;
 
+    // get saved todos from the todos.json file
+    const todos = await getTodosFromFile();
+
     // check if the requested todo item exists in our records
-    const todoItemIndex = TODOS.findIndex((todo) => todo.id === id);
+    const todoItemIndex = todos.findIndex((todo) => todo.id === id);
     if (todoItemIndex === -1) {
         return res.status(404).send('No todo item was found to delete!');
     }
 
-    // todo item exists. delete it from the TODOS array
-    TODOS.splice(todoItemIndex, 1);
+    // todo item exists. delete it from the todos array
+    todos.splice(todoItemIndex, 1);
+
+    // save the updated todos list in the todos.json file
+    await saveTodosToFile(todos);
 
     // finally, return the success response
     res.status(200).send('Todo item deleted successfully');

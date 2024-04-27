@@ -1,1 +1,14 @@
-[]
+[
+    {
+        "id": "dcd1adf1-32dc-4581-a54a-53aca5d35733",
+        "title": "[URGENT] Buy groceries",
+        "description": "I should buy groceries",
+        "completed": true
+    },
+    {
+        "id": "0f46de27-d46c-44e1-98f5-f9288b9e26f6",
+        "title": "Buy groceries",
+        "description": "I should buy groceries",
+        "completed": false
+    }
+]
