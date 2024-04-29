@@ -2,6 +2,8 @@ const request = require('supertest');
 const assert = require('assert');
 const express = require('express');
 
+const SERVER_PORT = 8000;
+
 const app = express();
 let requestCount = 0;
 
@@ -10,16 +12,27 @@ let requestCount = 0;
 // maintain a count of the number of requests made to the server in the global
 // requestCount variable
 
-app.get('/user', function(req, res) {
-  res.status(200).json({ name: 'john' });
+// define and use the global middleware to count the incoming requests
+app.use((req, res, next) => {
+    requestCount += 1;
+    next();
 });
 
-app.post('/user', function(req, res) {
-  res.status(200).json({ msg: 'created dummy user' });
+app.get('/user', function (req, res) {
+    res.status(200).json({ name: 'john' });
 });
 
-app.get('/requestCount', function(req, res) {
-  res.status(200).json({ requestCount });
+app.post('/user', function (req, res) {
+    res.status(200).json({ msg: 'created dummy user' });
+});
+
+app.get('/requestCount', function (req, res) {
+    res.status(200).json({ requestCount });
+});
+
+// start the server to listen to the incoming requests
+app.listen(SERVER_PORT, () => {
+    console.log(`Server started listening on port ${SERVER_PORT}`);
 });
 
 module.exports = app;
