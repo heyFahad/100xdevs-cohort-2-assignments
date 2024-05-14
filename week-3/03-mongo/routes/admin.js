@@ -63,8 +63,10 @@ router.post('/courses', adminMiddleware, async (req, res) => {
     return res.status(200).json({ message: 'Course created successfully', courseId: course.id });
 });
 
-router.get('/courses', adminMiddleware, (req, res) => {
+router.get('/courses', adminMiddleware, async (req, res) => {
     // Implement fetching all courses logic
+    const courses = await Admin.find();
+    return res.status(200).json({ courses });
 });
 
 module.exports = router;
