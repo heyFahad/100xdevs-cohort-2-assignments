@@ -1,13 +1,20 @@
 const { z } = require('zod');
 const { Router } = require('express');
 const adminMiddleware = require('../middleware/admin');
-const { Admin } = require('../db');
+const { Admin, Course } = require('../db');
 
 const router = Router();
 
 const signupBodySchema = z.object({
     username: z.string(),
     password: z.string(),
+});
+
+const createCourseBodySchema = z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    price: z.number(),
+    imageLink: z.string().url(),
 });
 
 // Admin Routes
@@ -36,8 +43,24 @@ router.post('/signup', async (req, res) => {
     return res.status(200).json({ message: 'Admin created successfully' });
 });
 
-router.post('/courses', adminMiddleware, (req, res) => {
+router.post('/courses', adminMiddleware, async (req, res) => {
     // Implement course creation logic
+    const parsedBody = createCourseBodySchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).json(parsedBody.error);
+    }
+
+    // body data is correct. Save this new course into the database
+    const { title, description, price, imageLink } = parsedBody.data;
+    const course = await Course.create({
+        title,
+        description,
+        price,
+        imageLink,
+    });
+
+    // course created successfully. Return the response now
+    return res.status(200).json({ message: 'Course created successfully', courseId: course.id });
 });
 
 router.get('/courses', adminMiddleware, (req, res) => {
