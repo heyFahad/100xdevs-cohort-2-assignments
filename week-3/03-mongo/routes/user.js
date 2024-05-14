@@ -1,7 +1,7 @@
 const { z } = require('zod');
 const { Router } = require('express');
 const router = Router();
-const { User } = require('../db');
+const { Course, User } = require('../db');
 
 const userMiddleware = require('../middleware/user');
 
@@ -36,8 +36,10 @@ router.post('/signup', async (req, res) => {
     return res.status(200).json({ message: 'User created successfully' });
 });
 
-router.get('/courses', (req, res) => {
+router.get('/courses', userMiddleware, async (req, res) => {
     // Implement listing all courses logic
+    const courses = await Course.find();
+    return res.status(200).json({ courses });
 });
 
 router.post('/courses/:courseId', userMiddleware, (req, res) => {
