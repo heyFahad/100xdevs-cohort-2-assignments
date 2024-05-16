@@ -83,8 +83,15 @@ router.post('/courses/:courseId', userMiddleware, async (req, res) => {
     return res.status(200).json({ message: 'Course purchased successfully', data: result });
 });
 
-router.get('/purchasedCourses', userMiddleware, (req, res) => {
+router.get('/purchasedCourses', userMiddleware, async (req, res) => {
     // Implement fetching purchased courses logic
+    const purchasedCourses = await Course.find({
+        _id: {
+            $in: req.user.purchasedCourses,
+        },
+    });
+
+    return res.status(200).json({ purchasedCourses });
 });
 
 module.exports = router;
