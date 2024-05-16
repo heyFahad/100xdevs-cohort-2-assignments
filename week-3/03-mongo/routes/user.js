@@ -3,11 +3,23 @@ const { Router } = require('express');
 const router = Router();
 const { Course, User } = require('../db');
 
+// A helper function to test if the given string is a valid MongoDB ObjectId or not
+const isMongoObjectId = (str) => {
+    const regex = /^[0-9a-fA-F]{24}$/;
+    return regex.test(str);
+};
+
 const userMiddleware = require('../middleware/user');
 
 const userSignUpBodySchema = z.object({
     username: z.string(),
     password: z.string(),
+});
+
+const purchaseCourseParamsSchema = z.object({
+    courseId: z.string().refine(isMongoObjectId, {
+        message: 'courseId is not a valid identifier string',
+    }),
 });
 
 // User Routes
@@ -42,8 +54,33 @@ router.get('/courses', userMiddleware, async (req, res) => {
     return res.status(200).json({ courses });
 });
 
-router.post('/courses/:courseId', userMiddleware, (req, res) => {
+router.post('/courses/:courseId', userMiddleware, async (req, res) => {
     // Implement course purchase logic
+    const parsedParams = purchaseCourseParamsSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+        return res.status(400).json({ message: 'courseId is not a valid identifier string' });
+    }
+
+    // the requested courseId seems to be in correct format. Let's try to see if we really have a course with the given course ID or not
+    const { courseId } = parsedParams.data;
+    const courseWithIdExists = await Course.findById(courseId);
+    if (!courseWithIdExists) {
+        return res.status(400).json({ message: 'No course exists with the given course ID' });
+    }
+
+    // Also, make sure that the user has not already purchased this course before making another purchase
+    const user = await User.findById(req.user.id);
+    const courseAlreadyPurchased = user.purchasedCourses.includes(courseId);
+    if (courseAlreadyPurchased) {
+        return res.status(409).json({ message: 'User has already purchased this course' });
+    }
+
+    // finally, if the course really exists and the user has not already purchased this course, then proceed
+    user.purchasedCourses.push(courseId);
+    const result = await user.save();
+
+    // return the success response
+    return res.status(200).json({ message: 'Course purchased successfully', data: result });
 });
 
 router.get('/purchasedCourses', userMiddleware, (req, res) => {
