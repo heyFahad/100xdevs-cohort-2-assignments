@@ -57,6 +57,7 @@ router.post('/courses', adminMiddleware, async (req, res) => {
         description,
         price,
         imageLink,
+        createdBy: req.user.id,
     });
 
     // course created successfully. Return the response now
