@@ -1,11 +1,15 @@
+const { promisify } = require('util');
 const { z } = require('zod');
-const { hash } = require('bcrypt'); // note that this package is `bcrypt` and not the `bcryptjs`
+const { compare, hash } = require('bcrypt'); // note that this package is `bcrypt` and not the `bcryptjs`
+const { sign } = require('jsonwebtoken');
 const { Router } = require('express');
+
+const signAsync = promisify(sign);
 
 const adminMiddleware = require('../middleware/admin');
 const { Admin } = require('../db');
 
-const adminSignUpBodySchema = z.object({
+const adminAuthBodySchema = z.object({
     username: z.string().min(3),
     password: z.string().min(6),
 });
@@ -15,7 +19,7 @@ const router = Router();
 // Admin Routes
 router.post('/signup', async (req, res) => {
     // Implement admin signup logic
-    const parsedBody = adminSignUpBodySchema.safeParse(req.body);
+    const parsedBody = adminAuthBodySchema.safeParse(req.body);
     if (!parsedBody.success) {
         return res.status(400).json(parsedBody.error);
     }
@@ -43,8 +47,31 @@ router.post('/signup', async (req, res) => {
     return res.status(201).json({ message: 'Admin created successfully' });
 });
 
-router.post('/signin', (req, res) => {
+router.post('/signin', async (req, res) => {
     // Implement admin signup logic
+    const parsedBody = adminAuthBodySchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).json(parsedBody.error); // 400 Bad Request
+    }
+
+    // request body seems to be correct. Let's see if the admin really exists or not
+    const { username, password } = parsedBody.data;
+    const adminExists = await Admin.findOne({ username });
+    if (!adminExists) {
+        return res.status(404).json({ message: 'Admin does not exist' }); // 404 Not Found
+    }
+
+    // if the admin exists, we then need to compare the given password with the stored hash
+    const isPasswordMatched = await compare(password, adminExists.password);
+    if (!isPasswordMatched) {
+        return res.status(403).json({ message: 'Username or password is not correct' }); // 403 Forbidden. Unlike 401 Unauthorized, the client's identity is known to the server.
+    }
+
+    // since the user credentials are correct, now we need to generate a JWT token for this user so that they can use it for their future requests
+    const token = await signAsync(adminExists.toObject(), process.env.JWT_SECRET);
+
+    // finally, return a success response to the user
+    return res.status(200).json({ token });
 });
 
 router.post('/courses', adminMiddleware, (req, res) => {
