@@ -7,11 +7,18 @@ const { Router } = require('express');
 const signAsync = promisify(sign);
 
 const adminMiddleware = require('../middleware/admin');
-const { Admin } = require('../db');
+const { Admin, Course } = require('../db');
 
 const adminAuthBodySchema = z.object({
     username: z.string().min(3),
     password: z.string().min(6),
+});
+
+const createCourseBodySchema = z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    price: z.number(),
+    imageLink: z.string().url(),
 });
 
 const router = Router();
@@ -74,12 +81,37 @@ router.post('/signin', async (req, res) => {
     return res.status(200).json({ token });
 });
 
-router.post('/courses', adminMiddleware, (req, res) => {
+router.post('/courses', adminMiddleware, async (req, res, next) => {
     // Implement course creation logic
+    // Implement course creation logic
+    const parsedBody = createCourseBodySchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).json(parsedBody.error);
+    }
+
+    // body data is correct. Save this new course into the database
+    const { title, description, price, imageLink } = parsedBody.data;
+
+    try {
+        const course = await Course.create({
+            title,
+            description,
+            price,
+            imageLink,
+            createdBy: req.user._id,
+        });
+
+        // course created successfully. Return the response now
+        return res.status(201).json({ message: 'Course created successfully', courseId: course.id });
+    } catch (error) {
+        next(error);
+    }
 });
 
-router.get('/courses', adminMiddleware, (req, res) => {
+router.get('/courses', adminMiddleware, async (req, res) => {
     // Implement fetching all courses logic
+    const courses = await Admin.find();
+    return res.status(200).json({ courses });
 });
 
 module.exports = router;
