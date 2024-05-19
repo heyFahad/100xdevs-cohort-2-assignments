@@ -75,7 +75,7 @@ router.post('/signin', async (req, res) => {
     }
 
     // since the user credentials are correct, now we need to generate a JWT token for this user so that they can use it for their future requests
-    const token = await signAsync(adminExists.toObject(), process.env.JWT_SECRET);
+    const token = await signAsync({ id: adminExists.id }, process.env.JWT_SECRET);
 
     // finally, return a success response to the user
     return res.status(200).json({ token });
