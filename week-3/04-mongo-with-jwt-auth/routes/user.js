@@ -15,6 +15,10 @@ const userAuthBodySchema = z.object({
     password: z.string().min(6),
 });
 
+const purchaseCourseParamsSchema = z.object({
+    courseId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'courseId is not a valid course identifier'),
+});
+
 // create the Router object and define routes for this module
 const router = Router();
 
@@ -85,12 +89,46 @@ router.get('/courses', userMiddleware, async (req, res) => {
     return res.status(200).json({ courses });
 });
 
-router.post('/courses/:courseId', userMiddleware, (req, res) => {
+router.post('/courses/:courseId', userMiddleware, async (req, res) => {
     // Implement course purchase logic
+    const parsedParams = purchaseCourseParamsSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+        return res.status(400).json({ message: '"courseId" is not a valid course identifier' });
+    }
+
+    // courseId param is in correct format. Let's proceed with the next validations
+    const { courseId } = parsedParams.data;
+
+    // check if there's any course with the given courseId in our database or not
+    const courseExists = await Course.findById(courseId);
+    if (!courseExists) {
+        return res.status(404).json({ message: 'No course exists in our system with the given course identifier.' });
+    }
+
+    // if the course exists in system, we then need to verify that the user has not already purchased this course
+    const { user } = req;
+    const { purchasedCourses } = user;
+    if (purchasedCourses.includes(courseId)) {
+        return res.status(409).json({ message: 'User has already purchased this course.' });
+    }
+
+    // if all the checks are passed, let's now push this new course into the user's purchasedCourses list
+    user.purchasedCourses.push(courseId);
+    const result = await user.save();
+
+    // User has been updated with the new course. Return the success response
+    res.status(201).json({ message: 'Course purchased successfully', data: result });
 });
 
-router.get('/purchasedCourses', userMiddleware, (req, res) => {
+router.get('/purchasedCourses', userMiddleware, async (req, res) => {
     // Implement fetching purchased courses logic
+    const purchasedCourses = await Course.find({
+        _id: {
+            $in: req.user.purchasedCourses,
+        },
+    });
+
+    return res.status(200).json(purchasedCourses);
 });
 
 module.exports = router;
