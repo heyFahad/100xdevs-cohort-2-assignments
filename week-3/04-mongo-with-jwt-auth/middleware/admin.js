@@ -33,7 +33,7 @@ async function adminMiddleware(req, res, next) {
         // to do that, we'll query our database to check if an admin exists with the given ID or not
         const isAdminRequest = await Admin.findOne({ _id: decodedToken._id });
         if (!isAdminRequest) {
-            return res.status(403).json({ message: 'Non-admin users are not allowed to access these endpoints' });
+            return res.status(403).json({ message: 'Non-admin users are not allowed to access this endpoint' });
         }
 
         // else, token has been successfully decoded and verified. Add this admin's identity to the incoming request object and proceed
