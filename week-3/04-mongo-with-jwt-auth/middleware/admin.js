@@ -1,6 +1,7 @@
 const { promisify } = require('node:util');
 const { z } = require('zod');
 const { verify } = require('jsonwebtoken');
+const { Admin } = require('../db');
 
 const verifyAsync = promisify(verify);
 
@@ -28,7 +29,14 @@ async function adminMiddleware(req, res, next) {
     try {
         const decodedToken = await verifyAsync(token, process.env.JWT_SECRET);
 
-        // token has been successfully decoded. Add this user's identity to the incoming request object and proceed
+        // one extra to finalize this authentication is to verify if the incoming request is actually from an admin or not
+        // to do that, we'll query our database to check if an admin exists with the given ID or not
+        const isAdminRequest = await Admin.findOne({ _id: decodedToken._id });
+        if (!isAdminRequest) {
+            return res.status(403).json({ message: 'Non-admin users are not allowed to access these endpoints' });
+        }
+
+        // else, token has been successfully decoded and verified. Add this admin's identity to the incoming request object and proceed
         req.user = decodedToken;
         next();
     } catch (error) {
