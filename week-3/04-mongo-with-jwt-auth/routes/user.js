@@ -3,7 +3,7 @@ const { z } = require('zod');
 const { compare, hash } = require('bcrypt');
 const { Router } = require('express');
 const { sign } = require('jsonwebtoken');
-const { User } = require('../db');
+const { Course, User } = require('../db');
 const userMiddleware = require('../middleware/user');
 
 // promisify the jwt.sign function to use it with async/await rather then using it with the callback style
@@ -79,8 +79,10 @@ router.post('/signin', async (req, res) => {
     return res.status(200).json({ token });
 });
 
-router.get('/courses', (req, res) => {
+router.get('/courses', userMiddleware, async (req, res) => {
     // Implement listing all courses logic
+    const courses = await Course.find();
+    return res.status(200).json({ courses });
 });
 
 router.post('/courses/:courseId', userMiddleware, (req, res) => {
