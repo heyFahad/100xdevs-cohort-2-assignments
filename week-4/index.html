@@ -22,6 +22,30 @@
                 const deleted = [];
                 const updated = [];
                 // calculate these 3 arrays
+                // let first find the added and updated todos by iterating over the newTodos array
+                newTodos.forEach((newTodo) => {
+                    const todoExists = oldTodoState.find((oldTodo) => oldTodo.id === newTodo.id);
+
+                    if (!todoExists) {
+                        // it's a new todo with a new ID. Add it to the added array
+                        added.push(newTodo);
+                    } else {
+                        // A todo with the given ID already exists. We need to check if this todo has been changed or not
+                        if (JSON.stringify(newTodo) !== JSON.stringify(todoExists)) {
+                            // if the todo is changed, push it into the updated array
+                            updated.push(newTodo);
+                        }
+                    }
+                });
+
+                // once the added and updated todos are identified, we then need to identify the removed todos by iterating over the oldTodoState
+                oldTodoState.forEach((oldTodo) => {
+                    const isTodoStillPresent = newTodos.find((newTodo) => newTodo.id === oldTodo.id);
+                    if (!isTodoStillPresent) {
+                        deleted.push(oldTodo);
+                    }
+                });
+
                 // call addTodo, removeTodo, updateTodo functions on each of the
                 // elements
                 oldTodoState = newTodos;
