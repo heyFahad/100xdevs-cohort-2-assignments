@@ -6,7 +6,29 @@
             let todoState = [];
             let oldTodoState = [];
 
-            function addTodoToDom() {}
+            function addTodoToDom(todo) {
+                const todoWrapper = document.createElement('div');
+                todoWrapper.id = `todo-${todo.id}`;
+                todoWrapper.style = 'margin: 8px 0; padding: 16px; color: white; background-color: teal; border: 1px dotted green; border-radius: 8px;';
+
+                // create the title tag
+                const titleElement = document.createElement('p');
+                titleElement.innerText = todo.title;
+                titleElement.style = 'margin: 0; padding: 0; margin-bottom: 8px;';
+
+                // similarly, create the description tag
+                const descriptionElement = document.createElement('p');
+                descriptionElement.innerText = todo.description;
+                descriptionElement.style = 'margin: 0; padding: 0;';
+
+                // then, append both these elements inside the todoWrapper element
+                todoWrapper.appendChild(titleElement);
+                todoWrapper.appendChild(descriptionElement);
+
+                // finally, attach this new todo in the todos container div to show it on the screen
+                const todosContainerDiv = document.querySelector('#todos');
+                todosContainerDiv.appendChild(todoWrapper);
+            }
 
             function removeTodoFromDom(todo) {}
 
@@ -48,18 +70,32 @@
 
                 // call addTodo, removeTodo, updateTodo functions on each of the
                 // elements
-                oldTodoState = newTodos;
+
+                // Once the diff is calculated, now we need to update the DOM accordingly
+                added.forEach((todo) => {
+                    addTodoToDom(todo);
+                });
+
+                // after updating the DOM, update the oldTodoState as well in the end
+                oldTodoState = [...newTodos];
             }
 
             function addTodo() {
-                const title = document.getElementById('title').value;
-                const description = document.getElementById('description').value;
-                todoState.push({
-                    title: title,
-                    description: description,
-                    id: globalId++,
-                });
-                updateState(todoState);
+                const title = document.getElementById('title');
+                const description = document.getElementById('description');
+                todoState = [
+                    ...todoState,
+                    {
+                        title: title.value,
+                        description: description.value,
+                        id: globalId++,
+                    },
+                ];
+                updateState([...todoState]);
+
+                // after updating the state, clear the input fields
+                title.value = '';
+                description.value = '';
             }
         </script>
     </head>
